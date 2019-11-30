@@ -40,8 +40,11 @@ class LayoutGraph:
         self.c1 = c1
         self.c2 = c2
         self.c = 1
-        self.area = 100
+        self.area = 1000
         self.k = self.c * np.sqrt(self.area / len(self.nodos))
+        self.temperaturaInicial = 10
+        self.temperatura = 1
+        self.constanteTemperatura = 0.95
 
         pass
 
@@ -84,10 +87,13 @@ class LayoutGraph:
         pass
 
     def step(self):
+        self.initializeTemperature()
         self.initializeAccumulators()
         self.computeAttractionForces()
         self.computeRepulsionForces()
+        self.computeGravityForces()
         self.updatePositions()
+        self.updateTemperature()
         self.plotear()
         pass
 
@@ -131,6 +137,9 @@ class LayoutGraph:
     def updatePositions(self):
         # TODO: revisar bordes ventana (?)
         for node in self.nodos:
+            f = [self.accumx[node], self.accumy[node]]
+            if modulo(f) > self.temperatura:
+                f = f * self.temperatura / modulo(f)
             self.posiciones[node][0] += self.accumx[node]
             self.posiciones[node][1] += self.accumy[node]
         pass
@@ -147,10 +156,23 @@ class LayoutGraph:
     def ordenada(self, v):
         return self.posiciones[v][1]
 
+    def computeGravityForces(self):
+        pass
+
+    def initializeTemperature(self):
+        self.temperatura = self.temperaturaInicial
+        pass
+
+    def updateTemperature(self):
+        self.temperatura *= self.constanteTemperatura
+        pass
+
 
 def distanciaEuclidiana(ni, nj):
     return np.sqrt((ni[0] - nj[0]) ** 2 + (ni[1] - nj[1]) ** 2)
 
+def modulo(vector):
+    return distanciaEuclidiana(vector, (0, 0))
 
 assert distanciaEuclidiana((0, 0), (3, 4)) == 5
 
