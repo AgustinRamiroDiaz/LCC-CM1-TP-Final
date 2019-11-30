@@ -5,20 +5,19 @@
 # Ejemplo parseo argumentos
 
 import argparse
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class LayoutGraph:
 
-    def __init__(self, grafo, iters, refresh, c1, c2, verbose = False):
+    def __init__(self, grafo, iters = 100, refresh = 1, repultionConstant = .1, attractionConstant = 5, verbose = False):
         """Parametros de layout:
         iters: cantidad de iteraciones a realizar
         refresh: Numero de iteraciones entre actualizaciones de pantalla.
         0 -> se grafica solo al final.
-        c1: constante usada para calcular la repulsion entre nodos
-        c2: constante usada para calcular la atraccion de aristas"""
+        repultionConstant: constante usada para calcular la repulsion entre nodos
+        attractionConstant: constante usada para calcular la atraccion de aristas"""
 
         # Guardo el grafo
         self.grafo = grafo
@@ -37,15 +36,16 @@ class LayoutGraph:
         self.verbose = verbose
         # TODO: faltan opciones
         self.refresh = refresh
-        self.c1 = c1
-        self.c2 = c2
+        self.repultionConstant = repultionConstant
+        self.attractionConstant = attractionConstant
         self.c = 1
-        self.area = 1000
+        self.frameSize = 10
+        self.area = self.frameSize ** 2
         self.k = self.c * np.sqrt(self.area / len(self.nodos))
         self.temperaturaInicial = 10
         self.temperatura = 1
-        self.constanteTemperatura = 0.95
-
+        self.constanteTemperatura = 0.9
+        self.deltaTime = 0.0001
         pass
 
     def layout(self):
@@ -58,7 +58,7 @@ class LayoutGraph:
 
     def posicionesAleatorias(self):
         for vertice in self.grafo[0]:
-            self.posiciones[vertice] = [np.random.random_sample(), np.random.random_sample()]
+            self.posiciones[vertice] = [np.random.random_sample() * self.frameSize, np.random.random_sample() * self.frameSize]
         pass
 
     def plotear(self):
@@ -73,14 +73,13 @@ class LayoutGraph:
             ordenadaDestino = posicionDestino[1]
             plt.plot([absisaOrigen, absisaDestino], [ordenadaOrigen, ordenadaDestino])
 
-        plt.pause(0.01)
+        plt.pause(self.deltaTime)
         pass
 
     def algoritmoFruchtermanReingold(self):
         # Seteamos posiciones iniciales aleatorias
         self.posicionesAleatorias()
 
-        accum = {}
         for k in range(self.iters):
             self.step()
         plt.show()
@@ -97,10 +96,13 @@ class LayoutGraph:
         self.plotear()
         pass
 
+    def initializeTemperature(self):
+        self.temperatura = self.temperaturaInicial
+        pass
+
     def initializeAccumulators(self):
-        for vertice in self.grafo[0]:
+        for vertice in self.nodos:
             self.accumx[vertice] = 0
-        for vertice in self.grafo[0]:
             self.accumy[vertice] = 0
         pass
 
@@ -111,11 +113,20 @@ class LayoutGraph:
             fx = modfa * (self.abcisa(nj) - self.abcisa(ni)) / distance
             fy = modfa * (self.ordenada(nj) - self.ordenada(ni)) / distance
 
-            self.accumx[ni] += fx
-            self.accumy[ni] += fy
+            if self.abcisa(ni) < self.abcisa(nj):
+                self.accumx[ni] += fx
+                self.accumx[nj] -= fx
+            else:
+                self.accumx[ni] -= fx
+                self.accumx[nj] += fx
 
-            self.accumx[nj] -= fx
-            self.accumy[nj] -= fy
+            if self.ordenada(ni) < self.ordenada(nj):
+                self.accumy[ni] += fy
+                self.accumy[nj] -= fy
+            else:
+                self.accumy[ni] -= fy
+                self.accumy[nj] += fy
+
         pass
 
     def computeRepulsionForces(self):
@@ -127,11 +138,22 @@ class LayoutGraph:
                     fx = modfa * (self.abcisa(nj) - self.abcisa(ni)) / distance
                     fy = modfa * (self.ordenada(nj) - self.ordenada(ni)) / distance
 
-                    self.accumx[ni] += fx
-                    self.accumy[ni] += fy
+                    if self.abcisa(ni) < self.abcisa(nj):
+                        self.accumx[ni] += fx
+                        self.accumx[nj] -= fx
+                    else:
+                        self.accumx[ni] -= fx
+                        self.accumx[nj] += fx
 
-                    self.accumx[nj] -= fx
-                    self.accumy[nj] -= fy
+                    if self.ordenada(ni) < self.ordenada(nj):
+                        self.accumy[ni] += fy
+                        self.accumy[nj] -= fy
+                    else:
+                        self.accumy[ni] -= fy
+                        self.accumy[nj] += fy
+        pass
+
+    def computeGravityForces(self):
         pass
 
     def updatePositions(self):
@@ -139,33 +161,28 @@ class LayoutGraph:
         for node in self.nodos:
             f = [self.accumx[node], self.accumy[node]]
             if modulo(f) > self.temperatura:
-                f = f * self.temperatura / modulo(f)
+                f = productoPorEscalar(self.temperatura / modulo(f), f)
+                self.accumx[node] = f[0]
+                self.accumy[node] = f[1]
             self.posiciones[node][0] += self.accumx[node]
             self.posiciones[node][1] += self.accumy[node]
-        pass
-
-    def attraction(self, distance):
-        return distance ** 2 / self.k
-
-    def repultion(self, distance):
-        return self.k ** 2 / distance
-
-    def abcisa(self, v):
-        return self.posiciones[v][0]
-
-    def ordenada(self, v):
-        return self.posiciones[v][1]
-
-    def computeGravityForces(self):
-        pass
-
-    def initializeTemperature(self):
-        self.temperatura = self.temperaturaInicial
         pass
 
     def updateTemperature(self):
         self.temperatura *= self.constanteTemperatura
         pass
+
+    def ordenada(self, v):
+        return self.posiciones[v][1]
+
+    def repultion(self, distance):
+        return self.k ** 2 / distance * self.repultionConstant
+
+    def attraction(self, distance):
+        return distance ** 2 / self.k * self.attractionConstant
+
+    def abcisa(self, v):
+        return self.posiciones[v][0]
 
 
 def distanciaEuclidiana(ni, nj):
@@ -173,6 +190,9 @@ def distanciaEuclidiana(ni, nj):
 
 def modulo(vector):
     return distanciaEuclidiana(vector, (0, 0))
+
+def productoPorEscalar(escalar, vector):
+    return [escalar * vector[0], escalar * vector[1]]
 
 assert distanciaEuclidiana((0, 0), (3, 4)) == 5
 
@@ -235,15 +255,12 @@ def main():
     # print args.temp
     # return
 
-    grafo = leeGrafoArchivo(args.file_name)
-
     # Creamos nuestro objeto LayoutGraph
     layout_gr = LayoutGraph(
-        grafo,  # TODO: Cambiar para usar grafo leido de archivo
+        leeGrafoArchivo(args.file_name),
         iters = args.iters,
-        refresh = 1,
-        c1 = 0.1,
-        c2 = 5.0,
+        repultionConstant = 0.1,
+        attractionConstant = 5.0,
         verbose = args.verbose
     )
 
