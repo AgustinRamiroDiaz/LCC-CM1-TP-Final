@@ -113,19 +113,11 @@ class LayoutGraph:
             fx = modfa * (self.abcisa(nj) - self.abcisa(ni)) / distance
             fy = modfa * (self.ordenada(nj) - self.ordenada(ni)) / distance
 
-            if self.abcisa(ni) < self.abcisa(nj):
-                self.accumx[ni] += fx
-                self.accumx[nj] -= fx
-            else:
-                self.accumx[ni] -= fx
-                self.accumx[nj] += fx
+            self.accumx[ni] += fx
+            self.accumx[nj] -= fx
 
-            if self.ordenada(ni) < self.ordenada(nj):
-                self.accumy[ni] += fy
-                self.accumy[nj] -= fy
-            else:
-                self.accumy[ni] -= fy
-                self.accumy[nj] += fy
+            self.accumy[ni] += fy
+            self.accumy[nj] -= fy
 
         pass
 
@@ -138,19 +130,11 @@ class LayoutGraph:
                     fx = modfa * (self.abcisa(nj) - self.abcisa(ni)) / distance
                     fy = modfa * (self.ordenada(nj) - self.ordenada(ni)) / distance
 
-                    if self.abcisa(ni) < self.abcisa(nj):
-                        self.accumx[ni] += fx
-                        self.accumx[nj] -= fx
-                    else:
-                        self.accumx[ni] -= fx
-                        self.accumx[nj] += fx
+                    self.accumx[ni] += fx
+                    self.accumx[nj] -= fx
 
-                    if self.ordenada(ni) < self.ordenada(nj):
-                        self.accumy[ni] += fy
-                        self.accumy[nj] -= fy
-                    else:
-                        self.accumy[ni] -= fy
-                        self.accumy[nj] += fy
+                    self.accumy[ni] += fy
+                    self.accumy[nj] -= fy
         pass
 
     def computeGravityForces(self):
