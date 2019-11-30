@@ -1,0 +1,1 @@
+python practica6_esqueleto.py tpfinal\grafos\ciclo.txt 100 
