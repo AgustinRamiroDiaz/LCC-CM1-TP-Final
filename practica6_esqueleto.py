@@ -38,14 +38,14 @@ class LayoutGraph:
         self.refresh = refresh
         self.repultionConstant = repultionConstant
         self.attractionConstant = attractionConstant
-        self.c = 1
-        self.frameSize = 10
+        self.c = 4
+        self.frameSize = 1
         self.area = self.frameSize ** 2
         self.k = self.c * np.sqrt(self.area / len(self.nodos))
-        self.temperaturaInicial = 10
+        self.temperaturaInicial = 1
         self.temperatura = 1
-        self.constanteTemperatura = 0.9
-        self.deltaTime = 0.0001
+        self.constanteTemperatura = 0.95
+        self.deltaTime = 0.01
         pass
 
     def layout(self):
@@ -82,6 +82,7 @@ class LayoutGraph:
 
         for k in range(self.iters):
             self.step()
+
         plt.show()
         pass
 
@@ -118,7 +119,6 @@ class LayoutGraph:
 
             self.accumy[ni] += fy
             self.accumy[nj] -= fy
-
         pass
 
     def computeRepulsionForces(self):
@@ -126,15 +126,15 @@ class LayoutGraph:
             for nj in self.nodos:
                 if ni != nj:
                     distance = distanciaEuclidiana(self.posiciones[ni], self.posiciones[nj])
-                    modfa = self.attraction(distance)
+                    modfa = self.repultion(distance)
                     fx = modfa * (self.abcisa(nj) - self.abcisa(ni)) / distance
                     fy = modfa * (self.ordenada(nj) - self.ordenada(ni)) / distance
 
-                    self.accumx[ni] += fx
-                    self.accumx[nj] -= fx
+                    self.accumx[ni] -= fx
+                    self.accumx[nj] += fx
 
-                    self.accumy[ni] += fy
-                    self.accumy[nj] -= fy
+                    self.accumy[ni] -= fy
+                    self.accumy[nj] += fy
         pass
 
     def computeGravityForces(self):
@@ -150,6 +150,7 @@ class LayoutGraph:
                 self.accumy[node] = f[1]
             self.posiciones[node][0] += self.accumx[node]
             self.posiciones[node][1] += self.accumy[node]
+
         pass
 
     def updateTemperature(self):
