@@ -7,11 +7,11 @@
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
-
+import time
 
 class LayoutGraph:
 
-    def __init__(self, grafo, iters = 100, refresh = 1, repultionConstant = .1, attractionConstant = 5, verbose = False):
+    def __init__(self, grafo, iters = 100, refresh = 1, repultionConstant = 10, attractionConstant = 3, verbose = False):
         """Parametros de layout:
         iters: cantidad de iteraciones a realizar
         refresh: Numero de iteraciones entre actualizaciones de pantalla.
@@ -39,12 +39,13 @@ class LayoutGraph:
         self.repultionConstant = repultionConstant
         self.attractionConstant = attractionConstant
         self.c = 4
-        self.frameSize = 1
+        self.frameSize = 100
         self.area = self.frameSize ** 2
         self.k = self.c * np.sqrt(self.area / len(self.nodos))
+        self.gravity = 0.1
         self.temperaturaInicial = 1
-        self.temperatura = 1
-        self.constanteTemperatura = 0.95
+        self.temperatura = 1000
+        self.constanteTemperatura = 0.98
         self.deltaTime = 0.01
         pass
 
@@ -73,16 +74,18 @@ class LayoutGraph:
             ordenadaDestino = posicionDestino[1]
             plt.plot([absisaOrigen, absisaDestino], [ordenadaOrigen, ordenadaDestino])
 
-        plt.pause(self.deltaTime)
+        #plt.pause(self.deltaTime)
         pass
 
     def algoritmoFruchtermanReingold(self):
         # Seteamos posiciones iniciales aleatorias
         self.posicionesAleatorias()
-
+        start_time = time.time()
         for k in range(self.iters):
             self.step()
-
+           
+        self.plotear()
+        print("--- %s seconds ---" % (time.time() - start_time))
         plt.show()
         pass
 
@@ -94,7 +97,7 @@ class LayoutGraph:
         self.computeGravityForces()
         self.updatePositions()
         self.updateTemperature()
-        self.plotear()
+        #self.plotear()
         pass
 
     def initializeTemperature(self):
@@ -138,8 +141,16 @@ class LayoutGraph:
         pass
 
     def computeGravityForces(self):
-        pass
+        centro = [self.frameSize / 2, self.frameSize / 2]
+        for ni in self.nodos:
+                distance = distanciaEuclidiana(self.posiciones[ni], centro)
+                modfa = self.gravity
+                fx = modfa * (centro[0] - self.abcisa(ni)) / distance
+                fy = modfa * (centro[1] - self.ordenada(ni)) / distance
 
+                self.accumx[ni] -= fx
+                self.accumy[ni] -= fy
+        
     def updatePositions(self):
         # TODO: revisar bordes ventana (?)
         for node in self.nodos:
@@ -165,6 +176,7 @@ class LayoutGraph:
 
     def attraction(self, distance):
         return distance ** 2 / self.k * self.attractionConstant
+
 
     def abcisa(self, v):
         return self.posiciones[v][0]
@@ -244,8 +256,6 @@ def main():
     layout_gr = LayoutGraph(
         leeGrafoArchivo(args.file_name),
         iters = args.iters,
-        repultionConstant = 0.1,
-        attractionConstant = 5.0,
         verbose = args.verbose
     )
 
