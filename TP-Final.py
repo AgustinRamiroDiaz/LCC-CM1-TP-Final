@@ -11,7 +11,7 @@ import time
 
 class LayoutGraph:
 
-    def __init__(self, grafo, iters = 100, refresh = 1, repultionConstant = 10, attractionConstant = 3, verbose = False):
+    def __init__(self, grafo, iters = 100, refresh = 1, temperaturaInicial = 1000, constanteTemperatura = 0.95, repultionConstant = 20, attractionConstant = 3, verbose = False):
         """Parametros de layout:
         iters: cantidad de iteraciones a realizar
         refresh: Numero de iteraciones entre actualizaciones de pantalla.
@@ -34,8 +34,10 @@ class LayoutGraph:
         # Guardo opciones
         self.iters = int(iters)
         self.verbose = verbose
-        # TODO: faltan opciones
-        self.refresh = refresh
+        if (refresh != 0):
+            self.refresh = refresh
+        else: 
+            self.refresh = self.iters
         self.repultionConstant = repultionConstant
         self.attractionConstant = attractionConstant
         self.c = 4
@@ -43,10 +45,11 @@ class LayoutGraph:
         self.area = self.frameSize ** 2
         self.k = self.c * np.sqrt(self.area / len(self.nodos))
         self.gravity = 0.1
-        self.temperaturaInicial = 1
-        self.temperatura = 1000
-        self.constanteTemperatura = 0.98
+        self.temperaturaInicial = temperaturaInicial
+        self.temperatura = self.temperaturaInicial
+        self.constanteTemperatura = constanteTemperatura
         self.deltaTime = 0.01
+        self.centro = [self.frameSize / 2, self.frameSize / 2]
         pass
 
     def layout(self):
@@ -74,31 +77,42 @@ class LayoutGraph:
             ordenadaDestino = posicionDestino[1]
             plt.plot([absisaOrigen, absisaDestino], [ordenadaOrigen, ordenadaDestino])
 
-        #plt.pause(self.deltaTime)
+        plt.pause(self.deltaTime)
         pass
 
     def algoritmoFruchtermanReingold(self):
         # Seteamos posiciones iniciales aleatorias
         self.posicionesAleatorias()
+        self.initializeTemperature()
         start_time = time.time()
-        for k in range(self.iters):
-            self.step()
-           
+        for count in range(self.iters):
+            self.step(count)
+
         self.plotear()
         print("--- %s seconds ---" % (time.time() - start_time))
         plt.show()
         pass
 
-    def step(self):
-        self.initializeTemperature()
+    def step(self, count):
         self.initializeAccumulators()
         self.computeAttractionForces()
         self.computeRepulsionForces()
         self.computeGravityForces()
         self.updatePositions()
         self.updateTemperature()
-        #self.plotear()
+        if count % self.refresh == 0:
+            self.plotear()
+        self.mostrarVerbosidad(count)
+
         pass
+
+    def mostrarVerbosidad(self, count):
+        # TODO cambiar cuenta
+        if self.verbose and count % np.floor(self.iters / 100) == 0:
+            print("Iteración: ", count)
+            print("Temperatura: ", self.temperatura)
+            print()
+
 
     def initializeTemperature(self):
         self.temperatura = self.temperaturaInicial
@@ -141,12 +155,11 @@ class LayoutGraph:
         pass
 
     def computeGravityForces(self):
-        centro = [self.frameSize / 2, self.frameSize / 2]
         for ni in self.nodos:
-                distance = distanciaEuclidiana(self.posiciones[ni], centro)
+                distance = distanciaEuclidiana(self.posiciones[ni], self.centro)
                 modfa = self.gravity
-                fx = modfa * (centro[0] - self.abcisa(ni)) / distance
-                fy = modfa * (centro[1] - self.ordenada(ni)) / distance
+                fx = modfa * (self.centro[0] - self.abcisa(ni)) / distance
+                fy = modfa * (self.centro[1] - self.ordenada(ni)) / distance
 
                 self.accumx[ni] -= fx
                 self.accumy[ni] -= fy
@@ -165,7 +178,7 @@ class LayoutGraph:
         pass
 
     def updateTemperature(self):
-        self.temperatura *= self.constanteTemperatura
+        self.temperatura = self.temperatura * self.constanteTemperatura
         pass
 
     def ordenada(self, v):
@@ -218,45 +231,49 @@ def main():
         action = 'store_true',
         help = 'Muestra mas informacion al correr el programa'
     )
-    # Cantidad de iteraciones, opcional, 50 por defecto
+    # Archivo del cual leer el grafo
     parser.add_argument(
-        '--iters',
+        'file_name',
+        help = "Archivo del cual leer el grafo a dibujar"
+    )
+    # Cantidad de iteraciones
+    parser.add_argument(
+        'iters',
         type = int,
-        help = 'Cantidad de iteraciones a efectuar',
-        default = 50
+        help = "Cantidad de iteraciones del algoritmo"
     )
     # Temperatura inicial
     parser.add_argument(
         '--temp',
         type = float,
         help = 'Temperatura inicial',
-        default = 100.0
+        default = 1000.0
     )
-    # Archivo del cual leer el grafo
+    # Cantidad de iteraciones entre actualizaciones de pantalla
     parser.add_argument(
-        'file_name',
-        help = "Archivo del cual leer el grafo a dibujar"
+        '--refresh',
+        type = int,
+        help = 'Cantidad de iteraciones entre actualizaciones de pantalla',
+        default = 1
     )
-
+    # Constante temperatura
     parser.add_argument(
-        'iters',
-        help = "Cantidad de iteraciones del algoritmo"
+        '--ctemp',
+        type = float,
+        help = 'Constante con la cual baja la temperatura cada step',
+        default = 0.95
     )
 
     args = parser.parse_args()
-
-    # Descomentar abajo para ver funcionamiento de argparse
-    # print args.verbose
-    # print args.iters    
-    # print args.file_name
-    # print args.temp
-    # return
 
     # Creamos nuestro objeto LayoutGraph
     layout_gr = LayoutGraph(
         leeGrafoArchivo(args.file_name),
         iters = args.iters,
-        verbose = args.verbose
+        verbose = args.verbose,
+        temperaturaInicial = args.temp,
+        constanteTemperatura = args.ctemp,
+        refresh = args.refresh
     )
 
     # Ejecutamos el layout
