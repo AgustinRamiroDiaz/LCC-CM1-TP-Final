@@ -8,10 +8,11 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+import pprint
 
 class LayoutGraph:
 
-    def __init__(self, grafo, iters = 100, refresh = 1, temperaturaInicial = 1000, constanteTemperatura = 0.95, repultionConstant = 20, attractionConstant = 3, verbose = False):
+    def __init__(self, grafo, refresh, temperaturaInicial, constanteTemperatura, gravedad, repultionConstant, attractionConstant, iters = 100, verbose = False):
         """Parametros de layout:
         iters: cantidad de iteraciones a realizar
         refresh: Numero de iteraciones entre actualizaciones de pantalla.
@@ -44,7 +45,7 @@ class LayoutGraph:
         self.frameSize = 100
         self.area = self.frameSize ** 2
         self.k = self.c * np.sqrt(self.area / len(self.nodos))
-        self.gravity = 0.1
+        self.gravity = gravedad
         self.temperaturaInicial = temperaturaInicial
         self.temperatura = self.temperaturaInicial
         self.constanteTemperatura = constanteTemperatura
@@ -89,7 +90,8 @@ class LayoutGraph:
             self.step(count)
 
         self.plotear()
-        print("--- %s seconds ---" % (time.time() - start_time))
+        if self.verbose:
+            print("--- Tiempo de ejecucion: %s segundos ---" % (time.time() - start_time))
         plt.show()
         pass
 
@@ -107,12 +109,13 @@ class LayoutGraph:
         pass
 
     def mostrarVerbosidad(self, count):
-        # TODO cambiar cuenta
-        if self.verbose and count % np.floor(self.iters / 100) == 0:
-            print("Iteración: ", count)
+        if self.verbose:
+            print("\n Iteracion: ", count)
             print("Temperatura: ", self.temperatura)
-            print()
-
+            print("Fuerza acumulada en x: ")
+            pprint.pp(self.accumx)
+            print("Fuerza acumulada en y: ")
+            pprint.pp(self.accumy)
 
     def initializeTemperature(self):
         self.temperatura = self.temperaturaInicial
@@ -165,7 +168,6 @@ class LayoutGraph:
                 self.accumy[ni] -= fy
         
     def updatePositions(self):
-        # TODO: revisar bordes ventana (?)
         for node in self.nodos:
             f = [self.accumx[node], self.accumy[node]]
             if modulo(f) > self.temperatura:
@@ -264,16 +266,40 @@ def main():
         default = 0.95
     )
 
+    parser.add_argument(
+        '--crepul',
+        type = float,
+        help = 'constante usada para calcular la repulsion entre nodos',
+        default = 20
+    )
+    
+    parser.add_argument(
+        '--catrac',
+        type = float,
+        help = 'constante usada para calcular la atraccion de aristas',
+        default = 3
+    )
+    
+    parser.add_argument(
+        '--cgrav',
+        type = float,
+        help = 'constante usada para calcular la fuerza de gravedad',
+        default = 0.1
+    )
+    
     args = parser.parse_args()
 
     # Creamos nuestro objeto LayoutGraph
     layout_gr = LayoutGraph(
         leeGrafoArchivo(args.file_name),
         iters = args.iters,
-        verbose = args.verbose,
+        refresh = args.refresh,
         temperaturaInicial = args.temp,
         constanteTemperatura = args.ctemp,
-        refresh = args.refresh
+        gravedad = args.cgrav,
+        repultionConstant = args.crepul,
+        attractionConstant = args.catrac,
+        verbose = args.verbose
     )
 
     # Ejecutamos el layout
