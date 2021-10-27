@@ -4,7 +4,6 @@
 # Complementos Matematicos I
 # Ejemplo parseo argumentos
 
-import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -17,12 +16,12 @@ class LayoutGraph:
         iters: cantidad de iteraciones a realizar
         refresh: Numero de iteraciones entre actualizaciones de pantalla.
         0 -> se grafica solo al final.
-        repultionConstant: constante usada para calcular la repulsion entre nodos
+        repultionConstant: constante usada para calcular la repulsion entre vértices
         attractionConstant: constante usada para calcular la atraccion de aristas"""
 
         # Guardo el grafo
         self.grafo = grafo
-        self.nodos = self.grafo[0]
+        self.vertices = self.grafo[0]
         self.aristas = self.grafo[1]
 
         # Inicializo estado
@@ -41,10 +40,10 @@ class LayoutGraph:
             self.refresh = self.iters
         self.repultionConstant = repultionConstant
         self.attractionConstant = attractionConstant
-        self.c = 4
+        self.c = 3
         self.frameSize = 100
         self.area = self.frameSize ** 2
-        self.k = self.c * np.sqrt(self.area / len(self.nodos))
+        self.k = self.c * np.sqrt(self.area / len(self.vertices))
         self.gravity = gravedad
         self.temperaturaInicial = temperaturaInicial
         self.temperatura = self.temperaturaInicial
@@ -62,7 +61,7 @@ class LayoutGraph:
         pass
 
     def posicionesAleatorias(self):
-        for vertice in self.grafo[0]:
+        for vertice in self.vertices:
             self.posiciones[vertice] = [np.random.random_sample() * self.frameSize, np.random.random_sample() * self.frameSize]
         pass
 
@@ -122,7 +121,7 @@ class LayoutGraph:
         pass
 
     def initializeAccumulators(self):
-        for vertice in self.nodos:
+        for vertice in self.vertices:
             self.accumx[vertice] = 0
             self.accumy[vertice] = 0
         pass
@@ -142,8 +141,8 @@ class LayoutGraph:
         pass
 
     def computeRepulsionForces(self):
-        for ni in self.nodos:
-            for nj in self.nodos:
+        for ni in self.vertices:
+            for nj in self.vertices:
                 if ni != nj:
                     distance = distanciaEuclidiana(self.posiciones[ni], self.posiciones[nj])
                     modfa = self.repultion(distance)
@@ -158,7 +157,7 @@ class LayoutGraph:
         pass
 
     def computeGravityForces(self):
-        for ni in self.nodos:
+        for ni in self.vertices:
                 distance = distanciaEuclidiana(self.posiciones[ni], self.centro)
                 modfa = self.gravity
                 fx = modfa * (self.centro[0] - self.abcisa(ni)) / distance
@@ -168,7 +167,7 @@ class LayoutGraph:
                 self.accumy[ni] -= fy
         
     def updatePositions(self):
-        for node in self.nodos:
+        for node in self.vertices:
             f = [self.accumx[node], self.accumy[node]]
             if modulo(f) > self.temperatura:
                 f = productoPorEscalar(self.temperatura / modulo(f), f)
@@ -198,7 +197,7 @@ class LayoutGraph:
 
 
 def distanciaEuclidiana(ni, nj):
-    return np.sqrt((ni[0] - nj[0]) ** 2 + (ni[1] - nj[1]) ** 2)
+    return np.linalg.norm(ni - nj)
 
 def modulo(vector):
     return distanciaEuclidiana(vector, (0, 0))
@@ -206,106 +205,15 @@ def modulo(vector):
 def productoPorEscalar(escalar, vector):
     return [escalar * vector[0], escalar * vector[1]]
 
-assert distanciaEuclidiana((0, 0), (3, 4)) == 5
 
+if __name__ == "__main__":
+    for a, b, c in np.random.random((100, 3, 2)):
+        BA = distanciaEuclidiana(b, a)
 
-def leeGrafoArchivo(file_path):
-    archivo = open(file_path)
-    lista = archivo.readlines()
-    cantidadDeVertices = int(lista.pop(0))
-    listaVertices = []
-    for x in range(cantidadDeVertices):
-        listaVertices.append(lista[x].rstrip("\n"))
-    ARITAS = lista[cantidadDeVertices:]
-    aristas = []
-    for par in ARITAS:
-        aristas.append((par.split()[0], par.split()[1]))
-    return listaVertices, aristas
+        AB = distanciaEuclidiana(a, b)
+        BC = distanciaEuclidiana(b, c)
+        AC = distanciaEuclidiana(a, c)
 
-
-def main():
-    # Definimos los argumentos de linea de comando que aceptamos
-    parser = argparse.ArgumentParser()
-
-    # Verbosidad, opcional, False por defecto
-    parser.add_argument(
-        '-v', '--verbose',
-        action = 'store_true',
-        help = 'Muestra mas informacion al correr el programa'
-    )
-    # Archivo del cual leer el grafo
-    parser.add_argument(
-        'file_name',
-        help = "Archivo del cual leer el grafo a dibujar"
-    )
-    # Cantidad de iteraciones
-    parser.add_argument(
-        'iters',
-        type = int,
-        help = "Cantidad de iteraciones del algoritmo"
-    )
-    # Temperatura inicial
-    parser.add_argument(
-        '--temp',
-        type = float,
-        help = 'Temperatura inicial',
-        default = 1000.0
-    )
-    # Cantidad de iteraciones entre actualizaciones de pantalla
-    parser.add_argument(
-        '--refresh',
-        type = int,
-        help = 'Cantidad de iteraciones entre actualizaciones de pantalla',
-        default = 1
-    )
-    # Constante temperatura
-    parser.add_argument(
-        '--ctemp',
-        type = float,
-        help = 'Constante con la cual baja la temperatura cada step',
-        default = 0.95
-    )
-
-    parser.add_argument(
-        '--crepul',
-        type = float,
-        help = 'constante usada para calcular la repulsion entre nodos',
-        default = 20
-    )
-    
-    parser.add_argument(
-        '--catrac',
-        type = float,
-        help = 'constante usada para calcular la atraccion de aristas',
-        default = 3
-    )
-    
-    parser.add_argument(
-        '--cgrav',
-        type = float,
-        help = 'constante usada para calcular la fuerza de gravedad',
-        default = 0.1
-    )
-    
-    args = parser.parse_args()
-
-    # Creamos nuestro objeto LayoutGraph
-    layout_gr = LayoutGraph(
-        leeGrafoArchivo(args.file_name),
-        iters = args.iters,
-        refresh = args.refresh,
-        temperaturaInicial = args.temp,
-        constanteTemperatura = args.ctemp,
-        gravedad = args.cgrav,
-        repultionConstant = args.crepul,
-        attractionConstant = args.catrac,
-        verbose = args.verbose
-    )
-
-    # Ejecutamos el layout
-    layout_gr.layout()
-    return
-
-
-if __name__ == '__main__':
-    main()
+        assert(AB == BA)
+        assert(AB >= 0)
+        assert(AB + BC >= AC)
