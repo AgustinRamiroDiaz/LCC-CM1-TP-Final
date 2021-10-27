@@ -1,1 +1,1 @@
-python3 TP-Final.py tpfinal/grafos/ciclo.txt 100 
+python3 main.py tpfinal/grafos/ciclo.txt 100 --temp 3000

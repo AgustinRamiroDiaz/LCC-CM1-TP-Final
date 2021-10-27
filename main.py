@@ -1,5 +1,5 @@
 import argparse
-
+from layout_graph import LayoutGraph
 
 def leeGrafoArchivo(file_path):
     archivo = open(file_path)

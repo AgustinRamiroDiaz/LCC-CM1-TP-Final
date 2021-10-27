@@ -62,7 +62,7 @@ class LayoutGraph:
 
     def posicionesAleatorias(self):
         for vertice in self.vertices:
-            self.posiciones[vertice] = [np.random.random_sample() * self.frameSize, np.random.random_sample() * self.frameSize]
+            self.posiciones[vertice] = np.array([np.random.random_sample() * self.frameSize, np.random.random_sample() * self.frameSize])
         pass
 
     def plotear(self):
@@ -168,7 +168,7 @@ class LayoutGraph:
         
     def updatePositions(self):
         for node in self.vertices:
-            f = [self.accumx[node], self.accumy[node]]
+            f = np.array([self.accumx[node], self.accumy[node]])
             if modulo(f) > self.temperatura:
                 f = productoPorEscalar(self.temperatura / modulo(f), f)
                 self.accumx[node] = f[0]
@@ -203,7 +203,7 @@ def modulo(vector):
     return distanciaEuclidiana(vector, (0, 0))
 
 def productoPorEscalar(escalar, vector):
-    return [escalar * vector[0], escalar * vector[1]]
+    return escalar * vector
 
 
 if __name__ == "__main__":
